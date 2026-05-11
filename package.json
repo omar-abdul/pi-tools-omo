@@ -1,0 +1,24 @@
+{
+  "name": "pi-tools-omo",
+  "version": "1.0.0",
+  "description": "Pi extensions and skills: HTTP request tool, context manager with live footer gauge and smart compaction, and context-aware coding strategy skill.",
+  "keywords": [
+    "pi-package"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/http-request",
+      "./extensions/context-manager"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  }
+}
