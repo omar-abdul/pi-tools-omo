@@ -6,21 +6,31 @@ import {
   CallToolResultSchema,
   Tool
 } from "@modelcontextprotocol/sdk/types.js";
-import { Type } from "typebox";
+
+interface MCPConnection {
+  client: Client;
+  transport: StdioClientTransport;
+  tools: Tool[];
+}
 
 export default function (pi: ExtensionAPI) {
-  const mcpClients = new Map<string, Client>();
+  const mcpConnections = new Map<string, MCPConnection>();
 
-  pi.registerCommand("mcp-add", {
+  pi.registerCommand("mcp-connect", {
     description: "Connect to an MCP server",
     handler: async (args, ctx) => {
       if (!args) {
-        ctx.ui.notify("Usage: /mcp-add <name> <command> [args...]", "error");
+        ctx.ui.notify("Usage: /mcp-connect <name> <command> [args...]", "error");
         return;
       }
 
       const [name, command, ...commandArgs] = args.split(/\s+/);
       
+      if (mcpConnections.has(name)) {
+        ctx.ui.notify(`MCP server '${name}' is already connected.`, "warn");
+        return;
+      }
+
       try {
         ctx.ui.setStatus("mcp", `Connecting to ${name}...`);
         
@@ -41,7 +51,9 @@ export default function (pi: ExtensionAPI) {
           ListToolsResultSchema
         );
 
-        for (const tool of (toolsResult.tools as Tool[])) {
+        const tools = toolsResult.tools as Tool[];
+
+        for (const tool of tools) {
           const toolName = `${name}_${tool.name}`;
           
           pi.registerTool({
@@ -49,7 +61,7 @@ export default function (pi: ExtensionAPI) {
             label: `MCP: ${toolName}`,
             description: tool.description || `MCP tool from ${name}`,
             parameters: tool.inputSchema as any,
-            async execute(toolCallId, params, signal, onUpdate, ctx) {
+            async execute(_toolCallId, params) {
               const result = await client.request(
                 {
                   method: "tools/call",
@@ -70,8 +82,8 @@ export default function (pi: ExtensionAPI) {
           });
         }
 
-        mcpClients.set(name, client);
-        ctx.ui.notify(`Connected to MCP server '${name}' with ${toolsResult.tools.length} tools.`, "info");
+        mcpConnections.set(name, { client, transport, tools });
+        ctx.ui.notify(`Connected to MCP server '${name}' with ${tools.length} tools.`, "info");
       } catch (error: any) {
         ctx.ui.notify(`Failed to connect to MCP server: ${error.message}`, "error");
       } finally {
@@ -80,14 +92,57 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
+  pi.registerCommand("mcp-disconnect", {
+    description: "Disconnect from an MCP server",
+    handler: async (name, ctx) => {
+      if (!name) {
+        ctx.ui.notify("Usage: /mcp-disconnect <name>", "error");
+        return;
+      }
+
+      const connection = mcpConnections.get(name);
+      if (!connection) {
+        ctx.ui.notify(`No MCP server connected with name '${name}'.`, "error");
+        return;
+      }
+
+      try {
+        await connection.client.close();
+        mcpConnections.delete(name);
+        ctx.ui.notify(`Disconnected from MCP server '${name}'. (Note: Tools are still registered in pi's index but will fail if called)`, "info");
+      } catch (error: any) {
+        ctx.ui.notify(`Error disconnecting: ${error.message}`, "error");
+      }
+    },
+  });
+
+  pi.registerCommand("mcp-list", {
+    description: "List connected MCP servers and their tools",
+    handler: async (_args, ctx) => {
+      if (mcpConnections.size === 0) {
+        ctx.ui.notify("No MCP servers connected.", "info");
+        return;
+      }
+
+      const infoLines: string[] = [];
+      for (const [name, conn] of mcpConnections.entries()) {
+        infoLines.push(`Server: ${name}`);
+        infoLines.push(`  Tools: ${conn.tools.map(t => t.name).join(", ")}`);
+        infoLines.push("");
+      }
+
+      ctx.ui.notify(infoLines.join("\n"), "info");
+    },
+  });
+
   pi.on("session_shutdown", async () => {
-    for (const client of mcpClients.values()) {
+    for (const { client } of mcpConnections.values()) {
       try {
         await client.close();
       } catch (e) {
         // ignore
       }
     }
-    mcpClients.clear();
+    mcpConnections.clear();
   });
 }
