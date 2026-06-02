@@ -158,16 +158,23 @@ export default function (pi: ExtensionAPI) {
     const config = await loadConfig();
     const servers = Object.entries(config.servers);
     if (servers.length > 0) {
-      ctx.ui.notify(`Restoring ${servers.length} MCP connection(s)...`, "info");
-      for (const [name, srv] of servers) {
-        await connectServer(
-          name,
-          srv.command,
-          srv.args,
-          (msg, type) => ctx.ui.notify(msg, type),
-          (key, val) => ctx.ui.setStatus(key, val)
-        );
-      }
+      ctx.ui.notify(`Restoring ${servers.length} MCP connection(s) in background...`, "info");
+      // Connect to servers sequentially in background to avoid blocking interactive startup
+      (async () => {
+        for (const [name, srv] of servers) {
+          try {
+            await connectServer(
+              name,
+              srv.command,
+              srv.args,
+              (msg, type) => ctx.ui.notify(msg, type),
+              (key, val) => ctx.ui.setStatus(key, val)
+            );
+          } catch (error: any) {
+            ctx.ui.notify(`Failed to restore MCP server '${name}': ${error.message}`, "error");
+          }
+        }
+      })().catch(() => {});
     }
   });
 

@@ -10,10 +10,14 @@
     "extensions": [
       "./extensions/http-request",
       "./extensions/context-manager",
-      "./extensions/mcp"
+      "./extensions/mcp",
+      "./extensions/splash"
     ],
     "skills": [
       "./skills"
+    ],
+    "themes": [
+      "./themes/*.json"
     ]
   },
   "dependencies": {
