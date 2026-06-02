@@ -19,6 +19,7 @@ interface MCPConnection {
 interface SavedMCPServer {
   command: string;
   args: string[];
+  env?: Record<string, string>;
 }
 
 interface MCPConfigFile {
@@ -37,11 +38,15 @@ async function loadConfig(): Promise<MCPConfigFile> {
   }
 }
 
-async function saveServer(name: string, command: string, args: string[]) {
+async function saveServer(name: string, command: string, args: string[], env?: Record<string, string>) {
   try {
     await mkdir(CONFIG_DIR, { recursive: true });
     const config = await loadConfig();
-    config.servers[name] = { command, args };
+    config.servers[name] = { 
+      command, 
+      args, 
+      env: env && Object.keys(env).length > 0 ? env : undefined 
+    };
     await writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), "utf8");
   } catch (error) {
     // ignore
@@ -65,6 +70,7 @@ export default function (pi: ExtensionAPI) {
     name: string,
     command: string,
     commandArgs: string[],
+    envVars: Record<string, string> | undefined,
     notifyFunc: (msg: string, type: "info" | "warn" | "error") => void,
     setStatusFunc?: (key: string, val: string) => void
   ): Promise<boolean> {
@@ -81,6 +87,7 @@ export default function (pi: ExtensionAPI) {
       const transport = new StdioClientTransport({
         command,
         args: commandArgs,
+        env: envVars ? { ...process.env, ...envVars } : undefined,
         stderr: "pipe", // Prevent writing to parent's stderr directly (which messes up the TUI/terminal screen)
       });
 
@@ -167,6 +174,7 @@ export default function (pi: ExtensionAPI) {
               name,
               srv.command,
               srv.args,
+              srv.env,
               (msg, type) => ctx.ui.notify(msg, type),
               (key, val) => ctx.ui.setStatus(key, val)
             );
@@ -178,26 +186,103 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
+  function parseArgs(argsStr: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inDoubleQuote = false;
+    let inSingleQuote = false;
+    let escaped = false;
+
+    for (let i = 0; i < argsStr.length; i++) {
+      const char = argsStr[i];
+
+      if (escaped) {
+        current += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+        continue;
+      }
+
+      if (char === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+        continue;
+      }
+
+      if (char === " " && !inDoubleQuote && !inSingleQuote) {
+        if (current) {
+          result.push(current);
+          current = "";
+        }
+        continue;
+      }
+
+      current += char;
+    }
+
+    if (current) {
+      result.push(current);
+    }
+
+    return result;
+  }
+
   pi.registerCommand("mcp-connect", {
     description: "Connect to an MCP server",
     handler: async (args, ctx) => {
       if (!args) {
-        ctx.ui.notify("Usage: /mcp-connect <name> <command> [args...]", "error");
+        ctx.ui.notify("Usage: /mcp-connect <name> [ENV_VAR=value ...] <command> [args...]", "error");
         return;
       }
 
-      const [name, command, ...commandArgs] = args.split(/\s+/);
+      const tokens = parseArgs(args);
+      if (tokens.length < 2) {
+        ctx.ui.notify("Usage: /mcp-connect <name> [ENV_VAR=value ...] <command> [args...]", "error");
+        return;
+      }
+
+      const name = tokens[0];
+      const env: Record<string, string> = {};
+      let cmdIndex = 1;
+
+      // Match env variables of format KEY=VALUE
+      const envRegex = /^[A-Za-z_][A-Za-z0-9_]*=/;
+      while (cmdIndex < tokens.length && envRegex.test(tokens[cmdIndex])) {
+        const token = tokens[cmdIndex];
+        const eqIndex = token.indexOf("=");
+        const key = token.slice(0, eqIndex);
+        const val = token.slice(eqIndex + 1);
+        env[key] = val;
+        cmdIndex++;
+      }
+
+      if (cmdIndex >= tokens.length) {
+        ctx.ui.notify("Error: Missing command to execute", "error");
+        return;
+      }
+
+      const command = tokens[cmdIndex];
+      const commandArgs = tokens.slice(cmdIndex + 1);
       
       const success = await connectServer(
         name,
         command,
         commandArgs,
+        env,
         (msg, type) => ctx.ui.notify(msg, type),
         (key, val) => ctx.ui.setStatus(key, val)
       );
 
       if (success) {
-        await saveServer(name, command, commandArgs);
+        await saveServer(name, command, commandArgs, env);
       }
     },
   });
