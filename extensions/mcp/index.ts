@@ -20,6 +20,7 @@ interface SavedMCPServer {
   command: string;
   args: string[];
   env?: Record<string, string>;
+  connected?: boolean;
 }
 
 interface MCPConfigFile {
@@ -42,12 +43,27 @@ async function saveServer(name: string, command: string, args: string[], env?: R
   try {
     await mkdir(CONFIG_DIR, { recursive: true });
     const config = await loadConfig();
+    const existingConnected = config.servers[name]?.connected ?? false;
     config.servers[name] = { 
       command, 
       args, 
-      env: env && Object.keys(env).length > 0 ? env : undefined 
+      env: env && Object.keys(env).length > 0 ? env : undefined,
+      connected: existingConnected
     };
     await writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), "utf8");
+  } catch (error) {
+    // ignore
+  }
+}
+
+async function setServerConnected(name: string, connected: boolean) {
+  try {
+    const config = await loadConfig();
+    if (config.servers[name]) {
+      config.servers[name].connected = connected;
+      await mkdir(CONFIG_DIR, { recursive: true });
+      await writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), "utf8");
+    }
   } catch (error) {
     // ignore
   }
@@ -128,6 +144,9 @@ export default function (pi: ExtensionAPI) {
           description: tool.description || `MCP tool from ${name}`,
           parameters: tool.inputSchema as any,
           async execute(_toolCallId, params) {
+            if (!mcpConnections.has(name)) {
+              throw new Error(`MCP tool execution failed: Server '${name}' is not connected.`);
+            }
             const result = await client.request(
               {
                 method: "tools/call",
@@ -163,7 +182,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_start", async (_event, ctx) => {
     const config = await loadConfig();
-    const servers = Object.entries(config.servers);
+    const servers = Object.entries(config.servers).filter(([_, srv]) => srv.connected === true);
     if (servers.length > 0) {
       ctx.ui.notify(`Restoring ${servers.length} MCP connection(s) in background...`, "info");
       // Connect to servers sequentially in background to avoid blocking interactive startup
@@ -235,17 +254,17 @@ export default function (pi: ExtensionAPI) {
     return result;
   }
 
-  pi.registerCommand("mcp-connect", {
-    description: "Connect to an MCP server",
+  pi.registerCommand("mcp-add", {
+    description: "Add a new MCP server configuration without connecting",
     handler: async (args, ctx) => {
       if (!args) {
-        ctx.ui.notify("Usage: /mcp-connect <name> [ENV_VAR=value ...] <command> [args...]", "error");
+        ctx.ui.notify("Usage: /mcp-add <name> [ENV_VAR=value ...] <command> [args...]", "error");
         return;
       }
 
       const tokens = parseArgs(args);
       if (tokens.length < 2) {
-        ctx.ui.notify("Usage: /mcp-connect <name> [ENV_VAR=value ...] <command> [args...]", "error");
+        ctx.ui.notify("Usage: /mcp-add <name> [ENV_VAR=value ...] <command> [args...]", "error");
         return;
       }
 
@@ -271,43 +290,138 @@ export default function (pi: ExtensionAPI) {
 
       const command = tokens[cmdIndex];
       const commandArgs = tokens.slice(cmdIndex + 1);
-      
+
+      const config = await loadConfig();
+      const exists = !!config.servers[name];
+      await saveServer(name, command, commandArgs, env);
+
+      ctx.ui.notify(
+        exists
+          ? `Updated configuration for MCP server '${name}'.`
+          : `Added MCP server '${name}'. Use '/mcp-connect ${name}' to connect.`,
+        "info"
+      );
+    },
+  });
+
+  pi.registerCommand("mcp-remove", {
+    description: "Permanently remove an MCP server definition",
+    handler: async (name, ctx) => {
+      let targetName = name?.trim();
+
+      const config = await loadConfig();
+      const serverNames = Object.keys(config.servers);
+
+      if (serverNames.length === 0) {
+        ctx.ui.notify("No MCP servers are configured.", "warn");
+        return;
+      }
+
+      if (!targetName) {
+        const choice = await ctx.ui.select("Select MCP server to permanently remove:", serverNames);
+        if (!choice) return;
+        targetName = choice;
+      }
+
+      if (!config.servers[targetName]) {
+        ctx.ui.notify(`Error: MCP server '${targetName}' is not defined.`, "error");
+        return;
+      }
+
+      // If currently connected, disconnect first
+      const connection = mcpConnections.get(targetName);
+      if (connection) {
+        try {
+          await connection.client.close();
+          mcpConnections.delete(targetName);
+          ctx.ui.notify(`Disconnected from active server '${targetName}'.`, "info");
+        } catch (error: any) {
+          ctx.ui.notify(`Error disconnecting from active server: ${error.message}`, "warn");
+        }
+      }
+
+      await removeServer(targetName);
+      ctx.ui.notify(`MCP server '${targetName}' has been permanently removed.`, "info");
+    },
+  });
+
+  pi.registerCommand("mcp-connect", {
+    description: "Connect to an existing MCP server",
+    handler: async (name, ctx) => {
+      let targetName = name?.trim();
+
+      const config = await loadConfig();
+      const serverNames = Object.keys(config.servers);
+
+      if (serverNames.length === 0) {
+        ctx.ui.notify("No MCP servers are configured. Add one first using: /mcp-add <name> <command> [args...]", "error");
+        return;
+      }
+
+      if (!targetName) {
+        const choice = await ctx.ui.select("Select MCP server to connect:", serverNames);
+        if (!choice) return;
+        targetName = choice;
+      }
+
+      if (!config.servers[targetName]) {
+        ctx.ui.notify(`Error: MCP server '${targetName}' is not configured. Add it using: /mcp-add ${targetName} <command> [args...]`, "error");
+        return;
+      }
+
+      if (mcpConnections.has(targetName)) {
+        ctx.ui.notify(`MCP server '${targetName}' is already connected.`, "warn");
+        return;
+      }
+
+      const srv = config.servers[targetName];
       const success = await connectServer(
-        name,
-        command,
-        commandArgs,
-        env,
+        targetName,
+        srv.command,
+        srv.args,
+        srv.env,
         (msg, type) => ctx.ui.notify(msg, type),
         (key, val) => ctx.ui.setStatus(key, val)
       );
 
       if (success) {
-        await saveServer(name, command, commandArgs, env);
+        await setServerConnected(targetName, true);
       }
     },
   });
 
   pi.registerCommand("mcp-disconnect", {
-    description: "Disconnect from an MCP server",
+    description: "Disconnect from an MCP server without removing its configuration",
     handler: async (name, ctx) => {
-      if (!name) {
-        ctx.ui.notify("Usage: /mcp-disconnect <name>", "error");
+      let targetName = name?.trim();
+      const connectedNames = Array.from(mcpConnections.keys());
+
+      if (connectedNames.length === 0) {
+        ctx.ui.notify("No MCP servers are currently connected.", "info");
         return;
       }
 
-      const connection = mcpConnections.get(name);
-      if (!connection) {
-        ctx.ui.notify(`No MCP server connected with name '${name}'.`, "error");
+      if (!targetName) {
+        const choice = await ctx.ui.select("Select MCP server to disconnect:", connectedNames);
+        if (!choice) return;
+        targetName = choice;
+      }
+
+      if (!mcpConnections.has(targetName)) {
+        ctx.ui.notify(`Error: MCP server '${targetName}' is not currently connected.`, "error");
         return;
       }
 
-      try {
-        await connection.client.close();
-        mcpConnections.delete(name);
-        await removeServer(name);
-        ctx.ui.notify(`Disconnected from MCP server '${name}'.`, "info");
-      } catch (error: any) {
-        ctx.ui.notify(`Error disconnecting: ${error.message}`, "error");
+      const connection = mcpConnections.get(targetName);
+      if (connection) {
+        try {
+          await connection.client.close();
+          mcpConnections.delete(targetName);
+          await setServerConnected(targetName, false);
+          ctx.ui.notify(`Disconnected from MCP server '${targetName}'.`, "info");
+        } catch (error: any) {
+          ctx.ui.notify(`Error disconnecting: ${error.message}`, "error");
+        }
       }
     },
   });
