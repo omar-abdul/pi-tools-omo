@@ -2,10 +2,13 @@ import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 
 type ThemeColorizer = (lines: string[], theme: Theme) => string[];
 
+// ANSI sequences do not occupy terminal columns. Strip them before measuring styled lines.
+const ANSI_ESCAPE = /\x1b\[[0-?]*[ -/]*[@-~]/g;
+
 // Helper to determine accurate visual width of characters in a monospaced terminal.
 function getVisualWidth(s: string): number {
   let w = 0;
-  for (const char of s) {
+  for (const char of s.replace(ANSI_ESCAPE, "")) {
     const code = char.codePointAt(0);
     if (!code) continue;
     // Common double-width characters: emojis, fullwidth symbols, CJK characters
@@ -28,6 +31,11 @@ function getVisualWidth(s: string): number {
 function padVisual(s: string, targetWidth: number): string {
   const currentWidth = getVisualWidth(s);
   return s + " ".repeat(Math.max(0, targetWidth - currentWidth));
+}
+
+function centerLine(s: string, width: number): string {
+  const leftPadding = Math.max(0, Math.floor((width - getVisualWidth(s)) / 2));
+  return " ".repeat(leftPadding) + s;
 }
 
 // Theme colorizers for the logo grids
@@ -157,7 +165,7 @@ function colorizeDefaultLogo(lines: string[], theme: Theme): string[] {
   });
 }
 
-function getGiantPiLogo(theme: Theme): string[] {
+function getGiantPiLogo(theme: Theme, width: number): string[] {
   const name = theme.name || "default";
 
   let logoLines: string[] = [];
@@ -381,14 +389,20 @@ function getGiantPiLogo(theme: Theme): string[] {
     combined.push(`  ${l}${r}`);
   }
 
+  const blockWidth = Math.max(...combined.map(getVisualWidth));
+  const divider = theme.fg("borderMuted", "━".repeat(Math.min(72, Math.max(36, blockWidth))));
+
   combined.push(
     "",
-    `                 ${title}`,
-    `                  ${subtitle}`,
-    ""
+    divider,
+    title,
+    subtitle,
+    divider,
+    "",
   );
 
-  return combined;
+  // Center every line against the live terminal width instead of relying on fixed indentation.
+  return combined.map((line) => centerLine(line, width));
 }
 
 export default function splashLogoExtension(pi: ExtensionAPI) {
@@ -402,11 +416,11 @@ export default function splashLogoExtension(pi: ExtensionAPI) {
 
       ctx.ui.setHeader((_tui, theme) => {
         return {
-          render(_width: number): string[] {
+          render(width: number): string[] {
             if (!showingSplash) {
               return [];
             }
-            return getGiantPiLogo(theme);
+            return getGiantPiLogo(theme, width);
           },
           invalidate() {},
         };
