@@ -1,91 +1,62 @@
-# pi-tools-ilbuu
+# pi-tools-omo
 
-A [pi](https://github.com/earendil-works/pi-mono) package bundling two extensions and one skill for productive, cost-effective long coding sessions.
+A [Pi](https://github.com/earendil-works/pi-mono) package bundling two extensions and one skill for productive, cost-effective coding sessions.
 
 ## Contents
 
 ### Extensions
 
-#### `http-request`
-Gives the model an `http_request` tool to fetch live documentation, APIs, and web content during a session — no more guessing at API shapes.
-
-**Tool:** `http_request(url, method?, headers?, body?)`
-
 #### `context-manager`
-Live context window management for long coding sessions.
 
-- **Footer gauge** — colour-coded bar showing exactly how full the context window is at all times
-  ```
-  ctx: ████████░░░░░░░░░░ 43% 55k/200k │ claude-sonnet-4-6
-  ```
-  Green → yellow → orange → red as the window fills.
+Live context-window management for long coding sessions.
 
-- **Smart auto-compact** — intercepts every compaction and uses the cheapest model you have authenticated to write the summary (tries Gemini 2.5 Flash → GPT-4o mini → Claude Haiku → Llama 3.3 on Groq → DeepSeek). Falls back to pi's built-in compaction if none are available.
-
-- **Proactive warnings** — notifies at 70 % and again at 90 % so you are never caught mid-task.
-
-- **Compaction audit log** — every compact appends a timestamped structured entry to `.pi/context-log.md`.
-
+- **Footer gauge** — shows context usage, token counts, cost, active model, compaction count, and git branch.
+- **Smart compaction** — uses an available low-cost model for summaries and falls back to Pi's built-in compaction when none is available.
+- **Proactive warnings** — notifies at 70% and 90% usage.
+- **Compaction log** — successful custom summaries are appended to `.pi/context-log.md`.
 - **`/ctx` command:**
 
   | Command | Effect |
   |---|---|
-  | `/ctx` | Report widget above editor (auto-dismisses) |
-  | `/ctx compact` | Force compact now |
+  | `/ctx` | Show a context report widget above the editor |
+  | `/ctx compact` | Force compaction |
   | `/ctx compact <hint>` | Compact with a focus hint, e.g. `keep auth decisions` |
   | `/ctx save` | Write `CONTEXT_SNAPSHOT.md` to the project root |
+
+#### `splash`
+
+Displays a theme-aware startup header for the bundled themes and restores Pi's normal header after the first user input or agent start. The package includes `fantasy`, `anime`, `retro`, `rustic`, `dark`, and `hacker` themes.
 
 ### Skill
 
 #### `context-aware-coding`
-Loaded automatically (or via `/skill:context-aware-coding`). Teaches the model how to work inside a finite context window:
 
-- Minimal bootstrap (≤ 3 tool calls to anchor a session)
-- Chunk sizing table — micro / small / medium / large
-- File access discipline — `grep`/`find` + `read offset+limit` instead of full reads
-- Token budget action table (what to do at each usage %)
-- Compaction hygiene — finish the edit before compacting
-- Post-compact resume flow
-- End-of-session handoff via `/ctx save`
+Loaded automatically (or via `/skill:context-aware-coding`). It teaches the model how to work inside a finite context window, including bootstrap discipline, chunk sizing, compaction hygiene, and end-of-session handoff.
 
 ## Install
 
-### From git (GitHub)
+### From GitHub
 
 ```bash
-pi install git:github.com/YOUR_USERNAME/pi-tools-ilbuu
+pi install git:github.com/omar-abdul/pi-tools-omo
 ```
 
-### From npm
+### Local development
 
 ```bash
-pi install npm:pi-tools-ilbuu
-```
-
-### Local (development / personal use)
-
-```bash
-pi install /absolute/path/to/pi-tools-ilbuu
-```
-
-## Publish
-
-### npm
-
-```bash
-cd path/to/pi-tools-ilbuu
-npm publish --access public
-```
-
-### GitHub
-
-Push this directory to a public repo, then anyone can install it with:
-
-```bash
-pi install git:github.com/YOUR_USERNAME/pi-tools-ilbuu
+pi install /absolute/path/to/pi-tools-omo
 ```
 
 ## Requirements
 
-- [pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) ≥ 0.74.0
-- For smart compaction: at least one API key for a supported cheap model (Gemini, OpenAI, Anthropic, Groq, or DeepSeek)
+- [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) 0.74 or newer
+- For smart compaction: an API key for at least one supported provider (Google, OpenAI, Anthropic, Groq, or DeepSeek)
+
+## Development
+
+The package is intentionally dependency-free at runtime; Pi provides the extension APIs and TypeScript module mappings. After making changes, validate the package with:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm exec tsc --noEmit --allowJs false
+```

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "rustic",
+  "appearance": "dark",
+  "vars": {
+    "copper": "#d08c60",
+    "sage": "#a7c080",
+    "cream": "#e8d5b7",
+    "blue": "#83a598",
+    "red": "#d47766",
+    "ink": "#1f211e",
+    "panel": "#30342b",
+    "muted": "#918d79",
+    "wood": "#6f5b48"
+  },
+  "colors": {
+    "accent": "copper", "border": "sage", "borderAccent": "copper", "borderMuted": "wood",
+    "success": "sage", "error": "red", "warning": "copper", "muted": "muted", "dim": "#6f6b5a", "text": "",
+    "thinkingText": "muted", "selectedBg": "panel", "userMessageBg": "#292d26", "userMessageText": "cream",
+    "customMessageBg": "#332b24", "customMessageText": "cream", "customMessageLabel": "copper",
+    "toolPendingBg": "#2e3028", "toolSuccessBg": "#263226", "toolErrorBg": "#3a2926", "toolTitle": "blue", "toolOutput": "",
+    "mdHeading": "copper", "mdLink": "blue", "mdLinkUrl": "muted", "mdCode": "cream", "mdCodeBlock": "", "mdCodeBlockBorder": "wood",
+    "mdQuote": "muted", "mdQuoteBorder": "sage", "mdHr": "wood", "mdListBullet": "sage",
+    "toolDiffAdded": "sage", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "muted", "syntaxKeyword": "copper", "syntaxFunction": "blue", "syntaxVariable": "cream", "syntaxString": "sage",
+    "syntaxNumber": "copper", "syntaxType": "blue", "syntaxOperator": "copper", "syntaxPunctuation": "cream",
+    "thinkingOff": "wood", "thinkingMinimal": "muted", "thinkingLow": "blue", "thinkingMedium": "copper", "thinkingHigh": "sage", "thinkingXhigh": "red", "bashMode": "copper"
+  },
+  "export": { "pageBg": "#171916", "cardBg": "#252820", "infoBg": "#3a382b" }
+}

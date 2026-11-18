@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "dark",
+  "appearance": "dark",
+  "vars": {
+    "blue": "#8ab4f8",
+    "gray": "#9aa4b2",
+    "white": "#e8eaed",
+    "green": "#81c995",
+    "red": "#f28b82",
+    "yellow": "#fdd663",
+    "panel": "#202124",
+    "dim": "#68707c"
+  },
+  "colors": {
+    "accent": "blue", "border": "gray", "borderAccent": "blue", "borderMuted": "dim",
+    "success": "green", "error": "red", "warning": "yellow", "muted": "gray", "dim": "dim", "text": "white",
+    "thinkingText": "gray", "selectedBg": "panel", "userMessageBg": "#18191b", "userMessageText": "white",
+    "customMessageBg": "#1d2024", "customMessageText": "white", "customMessageLabel": "blue",
+    "toolPendingBg": "#1b1d20", "toolSuccessBg": "#17221b", "toolErrorBg": "#2a1b1b", "toolTitle": "blue", "toolOutput": "",
+    "mdHeading": "blue", "mdLink": "blue", "mdLinkUrl": "gray", "mdCode": "yellow", "mdCodeBlock": "", "mdCodeBlockBorder": "dim",
+    "mdQuote": "gray", "mdQuoteBorder": "blue", "mdHr": "dim", "mdListBullet": "blue",
+    "toolDiffAdded": "green", "toolDiffRemoved": "red", "toolDiffContext": "gray",
+    "syntaxComment": "gray", "syntaxKeyword": "blue", "syntaxFunction": "blue", "syntaxVariable": "white", "syntaxString": "green",
+    "syntaxNumber": "yellow", "syntaxType": "blue", "syntaxOperator": "gray", "syntaxPunctuation": "white",
+    "thinkingOff": "dim", "thinkingMinimal": "gray", "thinkingLow": "blue", "thinkingMedium": "yellow", "thinkingHigh": "blue", "thinkingXhigh": "red", "bashMode": "yellow"
+  },
+  "export": { "pageBg": "#101113", "cardBg": "#181a1d", "infoBg": "#252a31" }
+}

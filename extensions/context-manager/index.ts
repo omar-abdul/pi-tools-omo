@@ -27,16 +27,15 @@
  *                        e.g. /ctx compact focus on auth module
  *       /ctx save     → write a CONTEXT_SNAPSHOT.md of current state
  *
- *  5. SMART SAVE  – on every compaction (manual or auto) the extension
- *     appends a timestamped entry to .pi/context-log.md so you can audit
- *     what was pruned.
+ *  5. SMART SAVE  – every successful custom summary appends a timestamped
+ *     entry to .pi/context-log.md so you can audit what was pruned.
  *
  *  Placement:  ~/.pi/agent/extensions/context-manager/index.ts
  *  Reload:     /reload inside pi, or restart pi.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { complete } from "@earendil-works/pi-ai";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
@@ -75,8 +74,23 @@ function pct(tokens: number, window: number): number {
 }
 
 function bar(fraction: number, width = 20): string {
-  const filled = Math.round(fraction * width);
+  const safeFraction = Math.max(0, Math.min(1, fraction));
+  const filled = Math.round(safeFraction * width);
   return "█".repeat(filled) + "░".repeat(width - filled);
+}
+
+function usageFraction(percent: number | undefined, tokens: number, window: number): number {
+  return percent != null ? Math.max(0, Math.min(1, percent / 100)) : pct(tokens, window);
+}
+
+function addSummaryFiles(summary: string, files: Set<string>): void {
+  for (const [tag, icon] of [["read-files", "📖"], ["modified-files", "✏️"]] as const) {
+    const match = summary.match(new RegExp(`<${tag}>\\n([\\s\\S]*?)(?=\\n<|$)`));
+    if (!match) continue;
+    for (const file of match[1].split("\n").map((line) => line.trim()).filter(Boolean)) {
+      files.add(`${icon} ${file}`);
+    }
+  }
 }
 
 function fmtK(n: number): string {
@@ -125,7 +139,7 @@ export default function contextManagerExtension(pi: ExtensionAPI) {
             return [truncateToWidth(theme.fg("dim", modelName), width)];
           }
 
-          const fraction = usage?.percent != null ? usage.percent / 100 : pct(tokens ?? 0, window);
+          const fraction = usageFraction(usage?.percent, tokens, window);
           const colour   = colourForFraction(fraction, theme);
           const gauge    = colour(bar(fraction, 18));
           const pctStr   = colour(`${Math.round(fraction * 100)}%`);
@@ -172,7 +186,7 @@ export default function contextManagerExtension(pi: ExtensionAPI) {
 
   async function generateSummary(
     ctx: ExtensionContext,
-    messagesToSummarise: unknown[],
+    messagesToSummarise: Parameters<typeof convertToLlm>[0],
     previousSummary: string | undefined,
     signal: AbortSignal,
     customInstructions?: string,
@@ -186,9 +200,8 @@ export default function contextManagerExtension(pi: ExtensionAPI) {
 
     ctx.ui.notify(`📝 Summarising with ${label} (cost-effective)…`, "info");
 
-    // Serialise conversation to plain text
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const conversationText = serializeConversation(convertToLlm(messagesToSummarise as any));
+    // Serialise conversation to plain text.
+    const conversationText = serializeConversation(convertToLlm(messagesToSummarise));
     const prevCtx = previousSummary ? `\n\nPrevious summary:\n${previousSummary}` : "";
     const extraInstr = customInstructions
       ? `\n\nSpecial focus for this summary:\n${customInstructions}`
@@ -247,23 +260,23 @@ ${conversationText}
 
   // ── append to context log ──────────────────────────────────────────────────
 
-  function logCompaction(cwd: string, summary: string, tokensBefore: number) {
+  async function logCompaction(cwd: string, summary: string, tokensBefore: number): Promise<void> {
     try {
       const dir = join(cwd, ".pi");
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      await mkdir(dir, { recursive: true });
       const logPath = join(dir, "context-log.md");
       const stamp = new Date().toISOString();
       const entry = `\n---\n## Compaction – ${stamp}\n**Tokens before:** ${tokensBefore.toLocaleString()}\n\n${summary}\n`;
-      appendFileSync(logPath, entry, "utf-8");
+      await appendFile(logPath, entry, "utf8");
     } catch {
-      // best effort
+      // Logging is best effort and must not prevent compaction.
     }
   }
 
   // ── session_before_compact – intercept and use cheap model ────────────────
 
   pi.on("session_before_compact", async (event, ctx) => {
-    const { preparation, signal } = event;
+    const { preparation, customInstructions, signal } = event;
     const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
 
     const allMessages = [...messagesToSummarize, ...turnPrefixMessages];
@@ -274,12 +287,13 @@ ${conversationText}
       allMessages,
       previousSummary,
       signal,
+      customInstructions,
     );
 
     if (!summary || signal.aborted) return; // fall back to default
 
     compactCount++;
-    logCompaction(sessionCwd, summary, tokensBefore);
+    await logCompaction(sessionCwd, summary, tokensBefore);
     ctx.ui.notify(`✅ Compact #${compactCount} done – summary saved to .pi/context-log.md`, "success");
 
     return {
@@ -291,13 +305,6 @@ ${conversationText}
     };
   });
 
-  // ── session_compact – update counter ──────────────────────────────────────
-
-  pi.on("session_compact", async (_event, ctx) => {
-    // Footer re-render to update compactCount display
-    installFooter(ctx);
-  });
-
   // ── turn_end – check warnings ──────────────────────────────────────────────
 
   pi.on("turn_end", async (_event, ctx) => {
@@ -306,7 +313,7 @@ ${conversationText}
 
     lastTokens = usage.tokens ?? lastTokens;
     lastWindow = usage.contextWindow;
-    const fraction = usage.percent != null ? usage.percent / 100 : pct(usage.tokens ?? 0, usage.contextWindow);
+    const fraction = usageFraction(usage.percent, usage.tokens ?? 0, usage.contextWindow);
 
     if (!warnedLevel1 && fraction >= WARN_LEVEL_1) {
       warnedLevel1 = true;
@@ -333,9 +340,8 @@ ${conversationText}
 
   // ── model_select – reset window info on model switch ─────────────────────
 
-  pi.on("model_select", async (event, ctx) => {
+  pi.on("model_select", async (event) => {
     lastWindow = event.model.contextWindow ?? lastWindow;
-    installFooter(ctx);
   });
 
   // ── /ctx command ──────────────────────────────────────────────────────────
@@ -361,7 +367,7 @@ ${conversationText}
         const usage  = ctx.getContextUsage();
         const tokens = usage?.tokens  ?? lastTokens;
         const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? lastWindow;
-        const fraction = usage?.percent != null ? usage.percent / 100 : pct(tokens ?? 0, window);
+        const fraction = usageFraction(usage?.percent, tokens, window);
 
         const branch = ctx.sessionManager.getBranch();
         const msgCount = branch.filter((e) => e.type === "message").length;
@@ -392,17 +398,12 @@ ${conversationText}
           ``,
         ];
 
-        // List files from session entries
+        // Recover file lists from summaries produced by this extension.
         const files = new Set<string>();
         for (const entry of branch) {
-          if (entry.type === "message" && (entry as { message?: { role?: string } }).message?.role === "assistant") {
-            // best effort: collect tool-call paths from the branch
-          }
-          if (entry.type === "compaction") {
-            const d = (entry as { details?: { readFiles?: string[]; modifiedFiles?: string[] } }).details;
-            if (d?.readFiles) d.readFiles.forEach((f: string) => files.add(`📖 ${f}`));
-            if (d?.modifiedFiles) d.modifiedFiles.forEach((f: string) => files.add(`✏️  ${f}`));
-          }
+          if (entry.type !== "compaction") continue;
+          const summary = (entry as { summary?: string }).summary;
+          if (summary) addSummaryFiles(summary, files);
         }
 
         if (files.size > 0) {
@@ -413,7 +414,7 @@ ${conversationText}
 
         const snapshotPath = join(sessionCwd, "CONTEXT_SNAPSHOT.md");
         try {
-          writeFileSync(snapshotPath, lines.join("\n"), "utf-8");
+          await writeFile(snapshotPath, lines.join("\n"), "utf8");
           ctx.ui.notify(`💾 Snapshot saved → CONTEXT_SNAPSHOT.md`, "success");
         } catch (e) {
           ctx.ui.notify(`Could not save snapshot: ${e}`, "error");
@@ -425,7 +426,7 @@ ${conversationText}
       const usage   = ctx.getContextUsage();
       const tokens  = usage?.tokens  ?? lastTokens;
       const window  = usage?.contextWindow ?? ctx.model?.contextWindow ?? lastWindow;
-      const fraction = usage?.percent != null ? usage.percent / 100 : pct(tokens ?? 0, window);
+      const fraction = usageFraction(usage?.percent, tokens, window);
 
       const statusIcon =
         fraction >= 0.9  ? "🔴 CRITICAL" :
@@ -477,6 +478,9 @@ ${conversationText}
 
   pi.on("session_start", async (_event, ctx) => {
     sessionCwd = ctx.cwd;
+    warnedLevel1 = false;
+    warnedLevel2 = false;
+    compactCount = 0;
     installFooter(ctx);
 
     const usage = ctx.getContextUsage();

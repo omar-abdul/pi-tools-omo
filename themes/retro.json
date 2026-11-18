@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "retro",
+  "appearance": "dark",
+  "vars": {
+    "orange": "#ff9f1c",
+    "teal": "#2ec4b6",
+    "cream": "#f7e7ce",
+    "green": "#9bc53d",
+    "red": "#e85d75",
+    "ink": "#201815",
+    "panel": "#3a2922",
+    "muted": "#a88972",
+    "brown": "#765548"
+  },
+  "colors": {
+    "accent": "orange", "border": "teal", "borderAccent": "orange", "borderMuted": "brown",
+    "success": "green", "error": "red", "warning": "orange", "muted": "muted", "dim": "#765f50", "text": "",
+    "thinkingText": "muted", "selectedBg": "panel", "userMessageBg": "#2c211c", "userMessageText": "cream",
+    "customMessageBg": "#35231f", "customMessageText": "cream", "customMessageLabel": "orange",
+    "toolPendingBg": "#32241e", "toolSuccessBg": "#263322", "toolErrorBg": "#402329", "toolTitle": "teal", "toolOutput": "",
+    "mdHeading": "orange", "mdLink": "teal", "mdLinkUrl": "muted", "mdCode": "cream", "mdCodeBlock": "", "mdCodeBlockBorder": "brown",
+    "mdQuote": "muted", "mdQuoteBorder": "orange", "mdHr": "brown", "mdListBullet": "teal",
+    "toolDiffAdded": "green", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "muted", "syntaxKeyword": "orange", "syntaxFunction": "teal", "syntaxVariable": "cream", "syntaxString": "green",
+    "syntaxNumber": "orange", "syntaxType": "teal", "syntaxOperator": "orange", "syntaxPunctuation": "cream",
+    "thinkingOff": "brown", "thinkingMinimal": "muted", "thinkingLow": "teal", "thinkingMedium": "orange", "thinkingHigh": "cream", "thinkingXhigh": "red", "bashMode": "orange"
+  },
+  "export": { "pageBg": "#19120f", "cardBg": "#2a1e18", "infoBg": "#4a3020" }
+}

@@ -1,4 +1,6 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+
+type ThemeColorizer = (lines: string[], theme: Theme) => string[];
 
 // Helper to determine accurate visual width of characters in a monospaced terminal.
 function getVisualWidth(s: string): number {
@@ -29,7 +31,7 @@ function padVisual(s: string, targetWidth: number): string {
 }
 
 // Theme colorizers for the logo grids
-function colorizeRpgLogo(lines: string[], theme: any): string[] {
+function colorizeRpgLogo(lines: string[], theme: Theme): string[] {
   const border = (s: string) => theme.fg("border", s);
   const accent = (s: string) => theme.fg("accent", s);
   const gold = (s: string) => theme.fg("warning", s);
@@ -56,7 +58,7 @@ function colorizeRpgLogo(lines: string[], theme: any): string[] {
   });
 }
 
-function colorizeCosmicLogo(lines: string[], theme: any): string[] {
+function colorizeCosmicLogo(lines: string[], theme: Theme): string[] {
   const border = (s: string) => theme.fg("border", s);
   const accent = (s: string) => theme.fg("accent", s);
   const pink = (s: string) => theme.fg("borderAccent", s);
@@ -86,7 +88,7 @@ function colorizeCosmicLogo(lines: string[], theme: any): string[] {
   });
 }
 
-function colorizeCyberLogo(lines: string[], theme: any): string[] {
+function colorizeCyberLogo(lines: string[], theme: Theme): string[] {
   const border = (s: string) => theme.fg("border", s);
   const pink = (s: string) => theme.fg("accent", s);
   const warning = (s: string) => theme.fg("warning", s);
@@ -111,7 +113,7 @@ function colorizeCyberLogo(lines: string[], theme: any): string[] {
   });
 }
 
-function colorizeSynthwaveLogo(lines: string[], theme: any): string[] {
+function colorizeSynthwaveLogo(lines: string[], theme: Theme): string[] {
   const orange = (s: string) => theme.fg("borderAccent", s);
   const fuchsia = (s: string) => theme.fg("accent", s);
   const green = (s: string) => theme.fg("success", s);
@@ -138,7 +140,7 @@ function colorizeSynthwaveLogo(lines: string[], theme: any): string[] {
   });
 }
 
-function colorizeDefaultLogo(lines: string[], theme: any): string[] {
+function colorizeDefaultLogo(lines: string[], theme: Theme): string[] {
   const accent = (s: string) => theme.fg("accent", s);
 
   return lines.map(line => {
@@ -155,16 +157,16 @@ function colorizeDefaultLogo(lines: string[], theme: any): string[] {
   });
 }
 
-function getGiantPiLogo(theme: any): string[] {
+function getGiantPiLogo(theme: Theme): string[] {
   const name = theme.name || "default";
 
   let logoLines: string[] = [];
   let sidebarLines: string[] = [];
-  let colorizer: (lines: string[], theme: any) => string[] = colorizeDefaultLogo;
+  let colorizer: ThemeColorizer = colorizeDefaultLogo;
   let title = "";
   let subtitle = "";
 
-  if (name === "rpg-magic") {
+  if (name === "fantasy") {
     logoLines = [
       " ╔══════════════════════════╗  ",
       " ║   ✹   ✦   ✨   ✦   ✹   ║  ",
@@ -197,15 +199,15 @@ function getGiantPiLogo(theme: any): string[] {
       `  💖 ${gold("HEALTH")} :: [${red("████████████")}] 100%`,
       `  🔷 ${gold("MANA")}   :: [${blue("████████████")}] 100%`,
       `  📜 ${gold("SPELLS")} :: ${purple("/help")}, ${purple("/settings")}, ${purple("/reload")}`,
-      `  🎒 ${gold("BAG")}    :: ${purple("Compacted Context")}, ${purple("MCP Tools")}`,
-      `  🛡️ ${gold("BUFFS")}  :: ${green("Active Focus (+50% Dev Speed)")}`,
+      `  🎒 ${gold("BAG")}    :: ${purple("Compacted Context")}`,
+      `  🛡️ ${gold("BUFFS")}  :: ${green("Focused session ready")}`,
       `  ${dim("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}`,
       `  🔮 ${gold("STATUS")} :: ${green("Ready to weave solutions...")}`
     ];
 
     title = theme.bold(gold("⚔️   E N T E R   T H E   C O D E   R E A L M   ⚔️"));
     subtitle = dim("Interactive companion initialized. Prepare your spells.");
-  } else if (name === "cosmic-mystic") {
+  } else if (name === "anime") {
     logoLines = [
       " ╭──────────────────────────╮  ",
       " │   ★    ☄      ★      ☄   │  ",
@@ -246,7 +248,7 @@ function getGiantPiLogo(theme: any): string[] {
 
     title = theme.bold(pink("🌌   C O S M I C   K E R N E L   🌌"));
     subtitle = dim("Deep space coding transceiver stable and ready.");
-  } else if (name === "cyber-glitch") {
+  } else if (name === "hacker") {
     logoLines = [
       " ┌──────────────────────────┐  ",
       " │   [x]   _ERR_   [x]   +  │  ",
@@ -275,19 +277,19 @@ function getGiantPiLogo(theme: any): string[] {
       `  ${dim("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}`,
       `  🔋 ${yellow("COGNITION")} :: ${cyan("Direct Sub-Link")}`,
       `  💾 ${yellow("SYS_LOAD")}  :: ${cyan("COMPACTED CONTEXT")}`,
-      `  📡 ${yellow("SIGNAL")}    :: ${green("100% ENCRYPTED")}`,
+      `  📡 ${yellow("SIGNAL")}    :: ${green("ONLINE")}`,
       `  👾 ${yellow("NODE_NET")}  :: [${green("████████████")}]`,
-      `  💀 ${yellow("FIREWALL")}  :: ${red("ACTIVE & BYPASSING")}`,
+      `  💀 ${yellow("FIREWALL")}  :: ${red("ACTIVE")}`,
       `  ${dim("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}`,
-      `  ⚡ ${green("Running prompt injection filters...")}`,
-      `  💾 ${cyan("Port 1455 terminal linked.")}`,
-      `  📡 ${pink("ping: 2ms | jitter: 0.1ms")}`,
-      `  👾 ${yellow("System sandbox initialized.")}`
+      `  ⚡ ${green("Interactive session ready.")}`,
+      `  💾 ${cyan("Terminal connection active.")}`,
+      `  📡 ${pink("Awaiting your next command.")}`,
+      `  👾 ${yellow("Developer tools standing by.")}`
     ];
 
     title = theme.bold(pink("⚡   S Y S T E M   O P E R A T I O N A L   ⚡"));
-    subtitle = dim("Hacking environment loaded. Execute commands below.");
-  } else if (name === "synthwave-sunset") {
+    subtitle = dim("Cyber-themed coding environment loaded.");
+  } else if (name === "retro") {
     logoLines = [
       " ◢██████████████████████████◣  ",
       " █   ▃▃▄▄▅▅▆▆▇▇████▇▇▆▆▅▅   █  ",
@@ -317,7 +319,7 @@ function getGiantPiLogo(theme: any): string[] {
       `  🏎️ ${mustard("DECK")}   :: ${cyan("Grid Racer v4.2")}`,
       `  📻 ${mustard("STATION")}:: ${cyan("108.5 Outrun Station")}`,
       `  🚥 ${mustard("GAUGES")} :: ${green("All Systems Nominal")}`,
-      `  🌅 ${mustard("HORID")}  :: [${fuchsia("==============")}] 100%`,
+      `  🌅 ${mustard("HORIZON")} :: [${fuchsia("==============")}] 100%`,
       `  🌴 ${mustard("SCENIC")}  :: ${cyan("Synth Palms Approaching")}`,
       `  ${dim("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}`,
       `  🌴 ${green("Cruising down the virtual highway...")}`,

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "fantasy",
+  "appearance": "dark",
+  "vars": {
+    "violet": "#b78cff",
+    "gold": "#ffd166",
+    "cyan": "#70d6ff",
+    "green": "#8be28b",
+    "red": "#ff6b6b",
+    "ink": "#171329",
+    "panel": "#241b3d",
+    "muted": "#887fa8",
+    "white": "#f5f1ff"
+  },
+  "colors": {
+    "accent": "violet", "border": "violet", "borderAccent": "gold", "borderMuted": "muted",
+    "success": "green", "error": "red", "warning": "gold", "muted": "muted", "dim": "#5f5878", "text": "",
+    "thinkingText": "muted", "selectedBg": "panel", "userMessageBg": "#1e1931", "userMessageText": "white",
+    "customMessageBg": "#201735", "customMessageText": "white", "customMessageLabel": "gold",
+    "toolPendingBg": "#211a38", "toolSuccessBg": "#172d26", "toolErrorBg": "#351d28", "toolTitle": "cyan", "toolOutput": "",
+    "mdHeading": "gold", "mdLink": "cyan", "mdLinkUrl": "muted", "mdCode": "gold", "mdCodeBlock": "", "mdCodeBlockBorder": "violet",
+    "mdQuote": "muted", "mdQuoteBorder": "violet", "mdHr": "muted", "mdListBullet": "cyan",
+    "toolDiffAdded": "green", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "muted", "syntaxKeyword": "violet", "syntaxFunction": "cyan", "syntaxVariable": "white", "syntaxString": "green",
+    "syntaxNumber": "gold", "syntaxType": "violet", "syntaxOperator": "gold", "syntaxPunctuation": "white",
+    "thinkingOff": "muted", "thinkingMinimal": "muted", "thinkingLow": "cyan", "thinkingMedium": "gold", "thinkingHigh": "violet", "thinkingXhigh": "red", "bashMode": "gold"
+  },
+  "export": { "pageBg": "#100d1d", "cardBg": "#1a1530", "infoBg": "#2b2050" }
+}

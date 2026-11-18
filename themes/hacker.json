@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "hacker",
+  "appearance": "dark",
+  "vars": {
+    "green": "#39ff88",
+    "lime": "#b6ff00",
+    "cyan": "#00e5ff",
+    "red": "#ff5577",
+    "white": "#d9ffe7",
+    "black": "#07110b",
+    "panel": "#102419",
+    "muted": "#4f9b68",
+    "dim": "#2d5d3e"
+  },
+  "colors": {
+    "accent": "green", "border": "green", "borderAccent": "lime", "borderMuted": "dim",
+    "success": "lime", "error": "red", "warning": "lime", "muted": "muted", "dim": "dim", "text": "white",
+    "thinkingText": "muted", "selectedBg": "panel", "userMessageBg": "#0b1a10", "userMessageText": "white",
+    "customMessageBg": "#0b2014", "customMessageText": "white", "customMessageLabel": "cyan",
+    "toolPendingBg": "#0e2115", "toolSuccessBg": "#102d18", "toolErrorBg": "#321522", "toolTitle": "cyan", "toolOutput": "",
+    "mdHeading": "lime", "mdLink": "cyan", "mdLinkUrl": "muted", "mdCode": "lime", "mdCodeBlock": "", "mdCodeBlockBorder": "green",
+    "mdQuote": "muted", "mdQuoteBorder": "green", "mdHr": "dim", "mdListBullet": "lime",
+    "toolDiffAdded": "lime", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "muted", "syntaxKeyword": "green", "syntaxFunction": "cyan", "syntaxVariable": "white", "syntaxString": "lime",
+    "syntaxNumber": "lime", "syntaxType": "green", "syntaxOperator": "cyan", "syntaxPunctuation": "white",
+    "thinkingOff": "dim", "thinkingMinimal": "muted", "thinkingLow": "green", "thinkingMedium": "cyan", "thinkingHigh": "lime", "thinkingXhigh": "red", "bashMode": "lime"
+  },
+  "export": { "pageBg": "#040a06", "cardBg": "#08160d", "infoBg": "#10351e" }
+}

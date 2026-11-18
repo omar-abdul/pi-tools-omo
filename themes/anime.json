@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "anime",
+  "appearance": "dark",
+  "vars": {
+    "pink": "#ff6fb5",
+    "cyan": "#70e1ff",
+    "yellow": "#ffe66d",
+    "mint": "#8affc1",
+    "red": "#ff6688",
+    "ink": "#11172b",
+    "panel": "#1c2745",
+    "muted": "#8191b8",
+    "white": "#f3f7ff"
+  },
+  "colors": {
+    "accent": "pink", "border": "cyan", "borderAccent": "pink", "borderMuted": "muted",
+    "success": "mint", "error": "red", "warning": "yellow", "muted": "muted", "dim": "#5d6a90", "text": "",
+    "thinkingText": "muted", "selectedBg": "panel", "userMessageBg": "#17213d", "userMessageText": "white",
+    "customMessageBg": "#211b45", "customMessageText": "white", "customMessageLabel": "pink",
+    "toolPendingBg": "#192544", "toolSuccessBg": "#153429", "toolErrorBg": "#3c1b35", "toolTitle": "cyan", "toolOutput": "",
+    "mdHeading": "pink", "mdLink": "cyan", "mdLinkUrl": "muted", "mdCode": "yellow", "mdCodeBlock": "", "mdCodeBlockBorder": "cyan",
+    "mdQuote": "muted", "mdQuoteBorder": "pink", "mdHr": "muted", "mdListBullet": "cyan",
+    "toolDiffAdded": "mint", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "muted", "syntaxKeyword": "pink", "syntaxFunction": "cyan", "syntaxVariable": "white", "syntaxString": "mint",
+    "syntaxNumber": "yellow", "syntaxType": "pink", "syntaxOperator": "cyan", "syntaxPunctuation": "white",
+    "thinkingOff": "muted", "thinkingMinimal": "muted", "thinkingLow": "cyan", "thinkingMedium": "yellow", "thinkingHigh": "pink", "thinkingXhigh": "red", "bashMode": "yellow"
+  },
+  "export": { "pageBg": "#0d1224", "cardBg": "#151e38", "infoBg": "#2a2050" }
+}
