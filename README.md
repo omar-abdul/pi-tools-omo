@@ -10,7 +10,7 @@ A [Pi](https://github.com/earendil-works/pi-mono) package bundling two extension
 
 Live context-window management for long coding sessions.
 
-- **Footer gauge** — shows context usage, token counts, cost, active model, compaction count, and git branch.
+- **Footer gauge** — shows context usage, token counts, active model, compaction count, and git branch.
 - **Smart compaction** — uses an available low-cost model for summaries and falls back to Pi's built-in compaction when none is available.
 - **Proactive warnings** — notifies at 70% and 90% usage.
 - **Compaction log** — successful custom summaries are appended to `.pi/context-log.md`.

@@ -38,7 +38,6 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { complete } from "@earendil-works/pi-ai";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
@@ -97,10 +96,6 @@ function fmtK(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function fmtCost(n: number): string {
-  return `$${n.toFixed(n >= 1 ? 2 : 4)}`;
-}
-
 function colourForFraction(fraction: number, theme: ExtensionContext["ui"]["theme"]): (s: string) => string {
   if (fraction >= 0.9) return (s) => theme.fg("error",   s);
   if (fraction >= 0.75) return (s) => theme.fg("warning", s);
@@ -143,16 +138,7 @@ export default function contextManagerExtension(pi: ExtensionAPI) {
           const colour   = colourForFraction(fraction, theme);
           const gauge    = colour(bar(fraction, 18));
           const pctStr   = colour(`${Math.round(fraction * 100)}%`);
-          let sessionCost = 0;
-          for (const entry of ctx.sessionManager.getBranch()) {
-            if (entry.type === "message" && entry.message.role === "assistant") {
-              const message = entry.message as AssistantMessage;
-              sessionCost += message.usage?.cost?.total ?? 0;
-            }
-          }
-
           const tokStr   = theme.fg("dim", `${fmtK(tokens)}/${fmtK(window)}`);
-          const costStr  = theme.fg("dim", fmtCost(sessionCost));
           const label    = theme.fg("dim", "ctx:");
           const sep      = theme.fg("dim", " │ ");
           const modelStr = theme.fg("dim", ctx.model?.id ?? "—");
@@ -163,7 +149,7 @@ export default function contextManagerExtension(pi: ExtensionAPI) {
             ? theme.fg("dim", ` (${footerData.getGitBranch()})`)
             : "";
 
-          const right = `${label}${gauge} ${pctStr} ${tokStr} ${costStr}${compact}${sep}${modelStr}${branch}`;
+          const right = `${label}${gauge} ${pctStr} ${tokStr}${compact}${sep}${modelStr}${branch}`;
           return [truncateToWidth(right, width)];
         },
       };
