@@ -58,5 +58,5 @@ The package is intentionally dependency-free at runtime; Pi provides the extensi
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm exec tsc --noEmit --allowJs false
+pi -p --no-session --offline --no-tools --no-extensions -e . "respond with ok"
 ```
